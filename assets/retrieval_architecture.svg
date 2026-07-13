@@ -1,0 +1,85 @@
+<svg width="1180" height="720" viewBox="0 0 1180 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1180" height="720" rx="24" fill="#F8FAFC"/>
+  <text x="590" y="54" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="800" fill="#111827">Multimodal Retrieval Architecture</text>
+  <text x="590" y="86" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="15" fill="#4B5563">Train image and text encoders into one shared embedding space, then search by cosine similarity.</text>
+
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2 2 L10 6 L2 10 Z" fill="#475569"/>
+    </marker>
+    <style>
+      .title { font: 700 16px Inter, Arial, sans-serif; fill: #111827; }
+      .body { font: 13px Inter, Arial, sans-serif; fill: #475569; }
+      .small { font: 12px Inter, Arial, sans-serif; fill: #64748B; }
+      .label { font: 700 13px Inter, Arial, sans-serif; fill: #0F172A; }
+    </style>
+  </defs>
+
+  <rect x="64" y="126" width="1052" height="236" rx="18" fill="#FFFFFF" stroke="#D1D5DB"/>
+  <text x="92" y="158" class="label">Training flow</text>
+
+  <rect x="94" y="190" width="170" height="92" rx="12" fill="#ECFEFF" stroke="#06B6D4"/>
+  <text x="179" y="222" text-anchor="middle" class="title">Image-caption pairs</text>
+  <text x="179" y="248" text-anchor="middle" class="body">training dataset</text>
+
+  <rect x="330" y="166" width="185" height="74" rx="12" fill="#EEF2FF" stroke="#6366F1"/>
+  <text x="422" y="198" text-anchor="middle" class="title">Image encoder</text>
+  <text x="422" y="221" text-anchor="middle" class="body">pixels -> vector</text>
+
+  <rect x="330" y="258" width="185" height="74" rx="12" fill="#FDF2F8" stroke="#DB2777"/>
+  <text x="422" y="290" text-anchor="middle" class="title">Text encoder</text>
+  <text x="422" y="313" text-anchor="middle" class="body">caption -> vector</text>
+
+  <rect x="596" y="190" width="182" height="92" rx="12" fill="#F0FDF4" stroke="#22C55E"/>
+  <text x="687" y="222" text-anchor="middle" class="title">Shared space</text>
+  <text x="687" y="247" text-anchor="middle" class="body">matching pairs close</text>
+
+  <rect x="854" y="190" width="192" height="92" rx="12" fill="#FFF7ED" stroke="#F97316"/>
+  <text x="950" y="222" text-anchor="middle" class="title">Contrastive loss</text>
+  <text x="950" y="247" text-anchor="middle" class="body">pushes wrong pairs away</text>
+
+  <line x1="264" y1="224" x2="318" y2="204" stroke="#475569" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="264" y1="248" x2="318" y2="294" stroke="#475569" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="516" y1="204" x2="584" y2="224" stroke="#475569" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="516" y1="294" x2="584" y2="248" stroke="#475569" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="778" y1="236" x2="842" y2="236" stroke="#475569" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <path d="M950 282 C950 326 442 354 422 332" stroke="#475569" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#arrow)"/>
+  <text x="690" y="340" text-anchor="middle" class="small">LoRA adapters update a small part of OpenCLIP while preserving pretrained knowledge.</text>
+
+  <rect x="64" y="398" width="1052" height="254" rx="18" fill="#FFFFFF" stroke="#D1D5DB"/>
+  <text x="92" y="430" class="label">Inference and retrieval flow</text>
+
+  <rect x="94" y="468" width="160" height="92" rx="12" fill="#EEF2FF" stroke="#6366F1"/>
+  <text x="174" y="497" text-anchor="middle" class="title">User query</text>
+  <text x="174" y="522" text-anchor="middle" class="body">text or image</text>
+  <text x="174" y="544" text-anchor="middle" class="small">from Gradio UI</text>
+
+  <rect x="318" y="468" width="178" height="92" rx="12" fill="#F8FAFC" stroke="#94A3B8"/>
+  <text x="407" y="497" text-anchor="middle" class="title">Best model</text>
+  <text x="407" y="522" text-anchor="middle" class="body">OpenCLIP + LoRA</text>
+  <text x="407" y="544" text-anchor="middle" class="small">encodes the query</text>
+
+  <rect x="560" y="468" width="178" height="92" rx="12" fill="#F0FDF4" stroke="#22C55E"/>
+  <text x="649" y="497" text-anchor="middle" class="title">Query embedding</text>
+  <text x="649" y="522" text-anchor="middle" class="body">normalized vector</text>
+
+  <rect x="560" y="585" width="178" height="44" rx="10" fill="#ECFEFF" stroke="#06B6D4"/>
+  <text x="649" y="612" text-anchor="middle" class="body">cached validation index</text>
+
+  <rect x="800" y="468" width="160" height="92" rx="12" fill="#FFF7ED" stroke="#F97316"/>
+  <text x="880" y="497" text-anchor="middle" class="title">Cosine similarity</text>
+  <text x="880" y="522" text-anchor="middle" class="body">rank nearest items</text>
+
+  <rect x="1000" y="468" width="86" height="92" rx="12" fill="#FEF2F2" stroke="#EF4444"/>
+  <text x="1043" y="499" text-anchor="middle" class="title">Top K</text>
+  <text x="1043" y="524" text-anchor="middle" class="body">images</text>
+  <text x="1043" y="545" text-anchor="middle" class="body">captions</text>
+
+  <line x1="254" y1="514" x2="306" y2="514" stroke="#475569" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="496" y1="514" x2="548" y2="514" stroke="#475569" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="738" y1="514" x2="788" y2="514" stroke="#475569" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="960" y1="514" x2="988" y2="514" stroke="#475569" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="649" y1="585" x2="800" y2="548" stroke="#475569" stroke-width="2.2" marker-end="url(#arrow)"/>
+
+  <text x="590" y="688" text-anchor="middle" class="small">Result: semantic retrieval by meaning, not by filename or exact keyword matching.</text>
+</svg>

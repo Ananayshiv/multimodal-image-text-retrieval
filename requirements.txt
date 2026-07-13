@@ -1,0 +1,9 @@
+torch>=2.1
+torchvision>=0.16
+open-clip-torch>=2.24
+pandas>=2.0
+numpy>=1.24
+pillow>=10.0
+tqdm>=4.66
+matplotlib>=3.7
+gradio>=5.0

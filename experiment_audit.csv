@@ -1,0 +1,12 @@
+notebook,status,errors,best_i2t_r1,best_i2t_r5,best_i2t_r10,best_t2i_r1,best_t2i_r5,best_t2i_r10,best_mean_score,notes
+sam.ipynb,completed,0,0.8850,0.9840,0.9980,0.7582,0.9464,0.9770,0.9248,Strongest verified run; LoRA CLIP; 5 epochs
+openclip_multimodal_retrieval_3outputs.ipynb,completed_with_interrupted_optional_cell,1,0.8690,0.9780,0.9910,0.7302,0.9288,0.9644,0.9102,Training and best-checkpoint evaluation completed
+solution_clean.ipynb,partially_completed,1,0.8170,0.9750,0.9910,0.6810,0.9120,0.9540,0.8883,Stopped by KeyboardInterrupt after epoch 2
+openclip_multimodal_retrieval_improved.ipynb,training_completed_optional_output_failed,1,0.8310,0.9600,0.9840,0.6810,0.9096,0.9554,0.8868,Training completed; final optional ensemble cell hit CUDA OOM
+multimodal_alignment (1) copy 2.ipynb,partially_executed,0,0.5230,0.8100,0.8970,0.4128,0.7412,0.8420,0.7043,Training completed but six code cells were not run
+multimodal_alignment (1) copy.ipynb,partially_executed,1,0.5230,0.8100,0.8970,0.4128,0.7412,0.8420,0.7043,Duplicate experiment with an interrupted output
+clip_style_multimodal_retrieval.ipynb,failed_after_evaluation,2,0.1530,0.3540,0.4870,0.1326,0.3464,0.4764,0.3249,Submission stage used an incorrect image directory
+multimodal_alignment.ipynb,failed,1,,,,,,,,DataLoader tokenizer type error
+multimodal_solution.ipynb,failed,4,,,,,,,,NumPy binary compatibility import failure
+202511046-clip.ipynb,failed,2,0.0000,0.0000,0.0010,0.0010,0.0052,0.0086,0.0026,NameError during training
+multimodal_semantic_alignment.ipynb,not_run,0,,,,,,,,No code cells executed
