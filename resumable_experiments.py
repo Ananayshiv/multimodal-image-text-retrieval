@@ -28,7 +28,7 @@ import open_clip
 
 @dataclass
 class SuiteConfig:
-    data_dir: str = "../data"
+    data_dir: str = "data"
     run_dir: str = "artifacts/fresh_runs"
     model_name: str = "ViT-B-16"
     pretrained: str = "openai"
@@ -56,16 +56,33 @@ def seed_all(seed: int) -> None:
     random.seed(seed); np.random.seed(seed); torch.manual_seed(seed); torch.cuda.manual_seed_all(seed)
 
 
+def _remove_empty_directory_artifact(path: Path) -> None:
+    if path.is_dir():
+        try:
+            path.rmdir()
+        except OSError as exc:
+            raise IsADirectoryError(
+                f"{path} is a non-empty directory, but this path must be a file. "
+                "Move or remove it before resuming."
+            ) from exc
+
+
 def atomic_torch_save(value, path: Path) -> None:
-    path.mkdir(parents=True, exist_ok=True)
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
+    _remove_empty_directory_artifact(path)
+    _remove_empty_directory_artifact(tmp)
     torch.save(value, tmp)
     os.replace(tmp, path)
 
 
 def atomic_json_save(value, path: Path) -> None:
-    path.mkdir(parents=True, exist_ok=True)
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
+    _remove_empty_directory_artifact(path)
+    _remove_empty_directory_artifact(tmp)
     tmp.write_text(json.dumps(value, indent=2, default=str))
     os.replace(tmp, path)
 
@@ -209,9 +226,13 @@ class RetrievalSuite:
 
     def run_one(self, name: str, spec: Dict):
         folder = self.runs / name; done = folder / "completed.json"; last = folder / "last.pt"
+        folder.mkdir(parents=True, exist_ok=True)
+        _remove_empty_directory_artifact(done)
+        _remove_empty_directory_artifact(last)
+        _remove_empty_directory_artifact(folder / "failure.json")
         if done.exists():
             print(f"[skip] {name} is complete"); return json.loads(done.read_text())
-        folder.mkdir(parents=True, exist_ok=True); model, preprocess, tokenizer = self._build_model(spec)
+        model, preprocess, tokenizer = self._build_model(spec)
         epochs = 0 if spec["strategy"] == "zero_shot" else spec.get("epochs", self.cfg.epochs)
         unfreeze_epoch = max(2, epochs // 2)
         history=[]; best=-1.; start_epoch=1; start_batch=0; state=None

@@ -25,7 +25,7 @@ except ImportError as exc:
     ) from exc
 
 
-HERE = Path(__file__).resolve()
+HERE = Path(__file__).resolve().parent
 RUNS = HERE / "artifacts/fresh_runs"
 RESULTS = RUNS / "fresh_comparison.csv"
 CACHE = RUNS / "demo_validation_index.pt"
@@ -33,6 +33,11 @@ CACHE = RUNS / "demo_validation_index.pt"
 
 def load_winner():
     """Discover and restore the current winner—no model name is hardcoded."""
+    if not RESULTS.exists():
+        raise FileNotFoundError(
+            f"Expected comparison results at {RESULTS}. "
+            "Run the fresh comparison/training notebook first, or check the artifacts directory."
+        )
     table = pd.read_csv(RESULTS).sort_values("mean_score", ascending=False)
     winner = table.iloc[0]
     name = str(winner["experiment"])
@@ -40,7 +45,7 @@ def load_winner():
         raise KeyError(f"Winning experiment {name!r} is absent from EXPERIMENTS")
 
     cfg = SuiteConfig(
-        data_dir=str(HERE/ "data"),
+        data_dir=str(HERE / "data"),
         run_dir=str(RUNS),
         eval_batch_size=256,
         num_workers=0,

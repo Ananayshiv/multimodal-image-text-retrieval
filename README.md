@@ -205,7 +205,7 @@ PROJECT_REPORT.md
 For the interactive demo, run:
 
 ```bash
-cd /home/student/Deep-Mtech/misc/DL/merged_multimodal_retrieval
+cd /home/student/Deep-Mtech/multimodal-image-text-retrieval
 pip install -r requirements.txt
 python app.py
 ```
@@ -220,7 +220,7 @@ The UI will open a local Gradio app. It has two tabs:
 To retrain all models, open:
 
 ```bash
-cd /home/student/Deep-Mtech/misc/DL/merged_multimodal_retrieval
+cd /home/student/Deep-Mtech/multimodal-image-text-retrieval
 jupyter lab train_all_models_resumable.ipynb
 ```
 
@@ -270,8 +270,8 @@ So the final model is not just the top scorer. It is also the more elegant engin
 
 ## Notes
 
-- The original notebooks and folders in `misc/DL` were not modified.
-- The dataset is expected at `../data` relative to this folder.
+- The project is self-contained in `multimodal-image-text-retrieval`; training reads `data/` here and writes generated files to `artifacts/` here.
+- The dataset is expected at `data/` inside this folder.
 - The UI searches the validation set, so it is a project demo, not a general web image search engine.
 - Large generated artifacts are kept under `artifacts/`, which is intentionally ignored by Git except for lightweight summaries and charts.
 
