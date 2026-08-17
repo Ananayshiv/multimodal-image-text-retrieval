@@ -12,8 +12,8 @@ A few validation images from the retrieval collection are shown below. These are
 
 <table>
   <tr>
-    <td align="center"><img src="assets/sample_1.jpg" width="180"><br><sub>Validation image sample 1</sub></td>
-    <td align="center"><img src="assets/sample_2.jpg" width="180"><br><sub>Validation image sample 2</sub></td>
+    <td align="center"><img src="assets/10188041.jpg" width="180"><br><sub>Validation image sample 1</sub></td>
+    <td align="center"><img src="assets/2701271123.jpg" width="180"><br><sub>Validation image sample 2</sub></td>
     <td align="center"><img src="assets/sample_3.jpg" width="180"><br><sub>Validation image sample 3</sub></td>
     <td align="center"><img src="assets/sample_4.jpg" width="180"><br><sub>Validation image sample 4</sub></td>
   </tr>
@@ -144,6 +144,9 @@ Those embeddings are cached in:
 artifacts/fresh_runs/demo_validation_index.pt
 ```
 
+This cache is generated locally and is not committed to Git. It is rebuilt
+automatically the first time the app runs with a new checkpoint.
+
 After that, searching is quick because the model does not need to re-encode the whole dataset every time. It only encodes your new query and compares it against the cached embeddings.
 
 For a text query:
@@ -185,6 +188,36 @@ This is why the UI can feel like semantic search instead of filename search. It 
 | `assets/fresh_comparison.png` | Final comparison chart used in the notebook and README |
 | `assets/retrieval_architecture.svg` | Generated architecture diagram for the README |
 | `assets/sample_*.jpg` | Small validation-image preview gallery used in the README |
+
+## Included Model Checkpoint
+
+The repository includes exactly one trained model checkpoint:
+
+```text
+artifacts/fresh_runs/openclip_lora/best.pt
+```
+
+This is the winning OpenCLIP ViT-B/16 model with LoRA fine-tuning and is the
+checkpoint loaded by `app.py`. No checkpoints for zero-shot, projection tuning,
+full fine-tuning, or gradual unfreezing are included. The lightweight experiment
+results and metadata under `artifacts/fresh_runs/` are retained so the comparison
+remains documented, but generated `.pt` files and caches are ignored.
+
+The checkpoint is approximately 576 MiB, so it is tracked with Git LFS rather
+than ordinary Git. Install Git LFS before adding or pushing it:
+
+```bash
+git lfs install
+git add .gitattributes artifacts/fresh_runs/openclip_lora/best.pt
+```
+
+You can verify that Git LFS owns the file with `git lfs ls-files`. GitHub will
+reject this checkpoint if it is added as a regular Git object.
+
+To produce the other model checkpoints, run the training notebook or call
+`suite.run_all()` as described in [Reproducing The Training](#reproducing-the-training).
+Training writes those locally under `artifacts/fresh_runs/<experiment>/`; Git will
+continue to ignore them.
 
 ## Start Here
 
@@ -239,6 +272,10 @@ Checkpoints and metrics are saved under:
 artifacts/fresh_runs/
 ```
 
+Only the winning `openclip_lora/best.pt` checkpoint is versioned. Running the
+training pipeline creates the other checkpoints locally; they are intentionally
+excluded from Git and must be regenerated from the code.
+
 ## Metrics Used
 
 The final comparison reports three main scores:
@@ -273,7 +310,7 @@ So the final model is not just the top scorer. It is also the more elegant engin
 - The project is self-contained in `multimodal-image-text-retrieval`; training reads `data/` here and writes generated files to `artifacts/` here.
 - The dataset is expected at `data/` inside this folder.
 - The UI searches the validation set, so it is a project demo, not a general web image search engine.
-- Large generated artifacts are kept under `artifacts/`, which is intentionally ignored by Git except for lightweight summaries and charts.
+- Lightweight metrics, completion metadata, and plots under `artifacts/` are versioned. Generated model files and embedding caches are ignored except for the single winning checkpoint at `artifacts/fresh_runs/openclip_lora/best.pt`.
 
 ## In One Sentence
 

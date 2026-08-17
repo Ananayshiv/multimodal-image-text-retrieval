@@ -1,0 +1,18 @@
+{
+  "experiment": "openclip_gradual_unfreeze",
+  "strategy": "gradual",
+  "status": "completed",
+  "best_epoch": 6,
+  "trainable_parameters": 149620737,
+  "epoch": 6,
+  "train_loss": 0.09405487250334348,
+  "i2t_R@1": 0.882,
+  "i2t_R@5": 0.989,
+  "i2t_R@10": 0.996,
+  "t2i_R@1": 0.7572,
+  "t2i_R@5": 0.9434,
+  "t2i_R@10": 0.9762,
+  "i2t_score": 0.9556666666666667,
+  "t2i_score": 0.8922666666666667,
+  "mean_score": 0.9239666666666666
+}

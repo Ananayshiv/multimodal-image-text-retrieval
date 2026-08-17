@@ -1,0 +1,18 @@
+{
+  "experiment": "openclip_full_finetune",
+  "strategy": "full",
+  "status": "completed",
+  "best_epoch": 4,
+  "trainable_parameters": 149620737,
+  "epoch": 4,
+  "train_loss": 0.09822676829493845,
+  "i2t_R@1": 0.879,
+  "i2t_R@5": 0.986,
+  "i2t_R@10": 0.996,
+  "t2i_R@1": 0.7478,
+  "t2i_R@5": 0.9434,
+  "t2i_R@10": 0.9742,
+  "i2t_score": 0.9536666666666666,
+  "t2i_score": 0.8884666666666666,
+  "mean_score": 0.9210666666666666
+}

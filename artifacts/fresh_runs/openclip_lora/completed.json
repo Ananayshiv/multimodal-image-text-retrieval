@@ -1,0 +1,18 @@
+{
+  "experiment": "openclip_lora",
+  "strategy": "lora",
+  "status": "completed",
+  "best_epoch": 1,
+  "trainable_parameters": 1228801,
+  "epoch": 1,
+  "train_loss": 0.24888180572384844,
+  "i2t_R@1": 0.886,
+  "i2t_R@5": 0.988,
+  "i2t_R@10": 0.999,
+  "t2i_R@1": 0.7592,
+  "t2i_R@5": 0.9452,
+  "t2i_R@10": 0.976,
+  "i2t_score": 0.9576666666666668,
+  "t2i_score": 0.8934666666666667,
+  "mean_score": 0.9255666666666668
+}

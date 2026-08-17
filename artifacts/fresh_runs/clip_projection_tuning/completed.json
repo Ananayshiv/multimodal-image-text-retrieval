@@ -1,0 +1,18 @@
+{
+  "experiment": "clip_projection_tuning",
+  "strategy": "projection",
+  "status": "completed",
+  "best_epoch": 1,
+  "trainable_parameters": 657921,
+  "epoch": 1,
+  "train_loss": 0.36583177607280376,
+  "i2t_R@1": 0.808,
+  "i2t_R@5": 0.956,
+  "i2t_R@10": 0.981,
+  "t2i_R@1": 0.657,
+  "t2i_R@5": 0.8964,
+  "t2i_R@10": 0.9452,
+  "i2t_score": 0.915,
+  "t2i_score": 0.8328666666666665,
+  "mean_score": 0.8739333333333332
+}

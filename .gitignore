@@ -1,5 +1,10 @@
-artifacts/
 .ipynb_checkpoints/
 __pycache__/
 *.pt
 *.pth
+
+# Keep experiment metrics, completion metadata, and plots under artifacts/, but
+# do not commit generated checkpoints or embedding caches. The sole checkpoint
+# distributed with this repository is the winning LoRA model used by app.py.
+!artifacts/fresh_runs/openclip_lora/best.pt
+artifacts/**/*.tmp

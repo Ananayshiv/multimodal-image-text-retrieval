@@ -1,0 +1,18 @@
+{
+  "experiment": "clip_zero_shot",
+  "strategy": "zero_shot",
+  "status": "completed",
+  "best_epoch": 0,
+  "trainable_parameters": 0,
+  "epoch": 0,
+  "train_loss": NaN,
+  "i2t_R@1": 0.775,
+  "i2t_R@5": 0.945,
+  "i2t_R@10": 0.977,
+  "t2i_R@1": 0.583,
+  "t2i_R@5": 0.8326,
+  "t2i_R@10": 0.904,
+  "i2t_score": 0.899,
+  "t2i_score": 0.7732,
+  "mean_score": 0.8361000000000001
+}
