@@ -182,8 +182,7 @@ This is why the UI can feel like semantic search instead of filename search. It 
 | `PROJECT_REPORT.md` | Short report-style summary of the project and results |
 | `train_all_models_resumable.ipynb` | Notebook for retraining all experiments from scratch |
 | `resumable_experiments.py` | Shared training, checkpointing, evaluation, and comparison code |
-| `unified_multimodal_retrieval.ipynb` | Earlier unified notebook kept as reference |
-| `experiment_audit.md` | Audit of the original notebooks and completed runs |
+| `experiment_audit.csv` | Audit of original experiment runs and validation metrics |
 | `requirements.txt` | Required Python packages |
 | `assets/fresh_comparison.png` | Final comparison chart used in the notebook and README |
 | `assets/retrieval_architecture.svg` | Generated architecture diagram for the README |
@@ -238,7 +237,7 @@ PROJECT_REPORT.md
 For the interactive demo, run:
 
 ```bash
-cd /home/student/Deep-Mtech/multimodal-image-text-retrieval
+cd multimodal-image-text-retrieval
 pip install -r requirements.txt
 python app.py
 ```
@@ -253,7 +252,7 @@ The UI will open a local Gradio app. It has two tabs:
 To retrain all models, open:
 
 ```bash
-cd /home/student/Deep-Mtech/multimodal-image-text-retrieval
+cd multimodal-image-text-retrieval
 jupyter lab train_all_models_resumable.ipynb
 ```
 
