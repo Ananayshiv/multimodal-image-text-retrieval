@@ -13,8 +13,8 @@ checkpoint-selection rule. LoRA OpenCLIP produced the strongest result:
 
 | Model | I→T score | T→I score | Mean score | Trainable parameters |
 |---|---:|---:|---:|---:|
-| LoRA OpenCLIP | **0.9600** | **0.8929** | **0.9264** | 1,228,801 |
-| Gradual unfreezing | 0.9547 | 0.8917 | 0.9232 | 149,620,737 |
+| LoRA OpenCLIP | **0.9577** | **0.8935** | **0.9256** | 1,228,801 |
+| Gradual unfreezing | 0.9557 | 0.8923 | 0.9240 | 149,620,737 |
 | Full fine-tuning | 0.9537 | 0.8885 | 0.9211 | 149,620,737 |
 | Projection tuning | 0.9150 | 0.8329 | 0.8739 | 657,921 |
 | Zero-shot CLIP | 0.8990 | 0.7732 | 0.8361 | 0 |

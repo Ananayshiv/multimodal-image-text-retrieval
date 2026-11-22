@@ -111,21 +111,48 @@ The most useful comparison here is not only accuracy. It is accuracy versus trai
 
 ## Final Result
 
-The models were retrained using the resumable experiment suite and evaluated on the same validation split.
+The models were retrained using the resumable experiment suite and evaluated on the same validation split. Every number in this table is read directly from `artifacts/fresh_runs/<experiment>/completed.json` (single seed, 42).
 
 ![Fresh model comparison](assets/fresh_comparison.png)
 
 | Rank | Experiment | Mean Score | Image-to-Text | Text-to-Image | Trainable Params |
 |---:|---|---:|---:|---:|---:|
-| 1 | `openclip_lora` | 0.9264 | 0.9600 | 0.8929 | 1,228,801 |
-| 2 | `openclip_gradual_unfreeze` | 0.9232 | 0.9581 | 0.8883 | 149,620,737 |
-| 3 | `openclip_full_finetune` | 0.9211 | 0.9576 | 0.8845 | 149,620,737 |
-| 4 | `clip_projection_tuning` | 0.8739 | 0.8933 | 0.8546 | 657,921 |
-| 5 | `clip_zero_shot` | 0.8361 | 0.8361 | 0.8361 | 0 |
+| 1 | `openclip_lora` | 0.9256 | 0.9577 | 0.8935 | 1,228,801 |
+| 2 | `openclip_gradual_unfreeze` | 0.9240 | 0.9557 | 0.8923 | 149,620,737 |
+| 3 | `openclip_full_finetune` | 0.9211 | 0.9537 | 0.8885 | 149,620,737 |
+| 4 | `clip_projection_tuning` | 0.8739 | 0.9150 | 0.8329 | 657,921 |
+| 5 | `clip_zero_shot` | 0.8361 | 0.8990 | 0.7732 | 0 |
 
 The best model is `openclip_lora`.
 
-It wins for a very practical reason: it gives the strongest mean validation score while training only about 1.23 million parameters. The full fine-tuning models train about 149.6 million parameters, but still score slightly lower. That makes LoRA the best tradeoff in this project: strong retrieval quality, much lower training cost, and easier reuse.
+It wins for a very practical reason: it gives the strongest mean validation score while training only about 1.23 million parameters (0.82% of the 149.6M updated by full fine-tuning). The margins over gradual unfreezing (+0.0016) and full fine-tuning (+0.0045) are small and come from one seed, with the epoch chosen on the same split that is reported; the multi-seed, held-out protocol below is how to establish whether they are real. What is robust already: LoRA matches full fine-tuning while training ~120× fewer parameters, and the three backbone-adapting methods (LoRA, gradual, full) beat zero-shot CLIP by 0.085–0.090.
+
+## Rigorous v2 benchmark: held-out test split, 3 seeds, significance tests
+
+The table above is the original single-seed run, and its epochs were chosen on the same split that is reported. v2 fixes both:
+
+- **Held-out selection:** 500 training images are carved out as a **dev** split (fixed `split_seed=0`, identical for every seed) and used *only* to pick the epoch. `data/val.csv` (1,000 images / 5,000 captions) becomes a test split that no decision ever touches. (`data/test.csv` is an unlabeled competition query set and is not used for metrics.)
+- **Seeds:** each strategy is trained with seeds 42, 43 and 44, and reported as mean ± std.
+- **Same budget as v1:** up to 10 epochs. **Early stopping on dev** (patience 3) saves compute; in v1, LoRA peaked at epoch 1 and then slowly declined (0.9256 → 0.9162), which is exactly where choosing the best of 10 noisy epochs on the reported split inflates a result.
+- **Exact ranks:** per-query ranks are saved (`test_per_query.csv`), so the evaluation also reports MRR and median rank, plus **paired bootstrap 95% CIs** on the headline score (5,000 resamples within each direction).
+- **Tested:** `retrieval_metrics.py` is torch-free and unit-tested (`pytest`), including a check that exact-rank recall reproduces the v1 top-k recall code.
+
+```bash
+pip install -r requirements.txt
+python run_seeds.py --seeds 42 43 44 --experiments openclip_lora openclip_full_finetune openclip_gradual_unfreeze
+python run_seeds.py --seeds 42 --experiments clip_zero_shot clip_projection_tuning
+python run_seeds.py --aggregate-only        # writes artifacts/seed_runs/RESULTS.md
+```
+
+It's resumable: rerun the same command after a Colab disconnect. Budget is 9 fine-tuning runs of at most 10 epochs, usually far fewer with early stopping. On an A100/L4 that's a few hours; a T4 is slower, so run one seed per session.
+
+| Strategy (test split, 3 seeds) | Mean score | I→T R@1 | T→I R@1 | Trainable params |
+|---|---:|---:|---:|---:|
+| LoRA OpenCLIP | *pending* | *pending* | *pending* | 1,228,801 |
+| Gradual unfreezing | *pending* | *pending* | *pending* | 149,620,737 |
+| Full fine-tuning | *pending* | *pending* | *pending* | 149,620,737 |
+
+**Pending:** filled from `artifacts/seed_runs/RESULTS.md` after the GPU run, along with LoRA − full and LoRA − gradual paired CIs. If an interval includes zero, the honest conclusion is "LoRA matches full fine-tuning at 0.8% of the trainable parameters", which is still the result that matters.
 
 ## How The Best Model Retrieves Results
 
@@ -181,7 +208,10 @@ This is why the UI can feel like semantic search instead of filename search. It 
 | `app.py` | Gradio UI for using the best trained model interactively |
 | `PROJECT_REPORT.md` | Short report-style summary of the project and results |
 | `train_all_models_resumable.ipynb` | Notebook for retraining all experiments from scratch |
-| `resumable_experiments.py` | Shared training, checkpointing, evaluation, and comparison code |
+| `resumable_experiments.py` | Shared training, checkpointing, evaluation, and comparison code (v2: dev-split selection, held-out test evaluation) |
+| `retrieval_metrics.py` | Torch-free exact-rank metrics, multi-seed aggregation, paired bootstrap |
+| `run_seeds.py` | Multi-seed held-out benchmark runner and aggregator |
+| `tests/` | Unit tests for metrics and aggregation (`pytest`) |
 | `experiment_audit.csv` | Audit of original experiment runs and validation metrics |
 | `requirements.txt` | Required Python packages |
 | `assets/fresh_comparison.png` | Final comparison chart used in the notebook and README |
@@ -296,7 +326,7 @@ Full fine-tuning updates the entire model, which is powerful but heavy. LoRA kee
 In this project, that worked very well:
 
 ```text
-openclip_lora mean score:       0.9264
+openclip_lora mean score:       0.9256
 full fine-tune mean score:      0.9211
 LoRA trainable parameters:      1.23M
 full fine-tune parameters:      149.62M
