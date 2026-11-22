@@ -3,6 +3,13 @@
 All strategies use the same OpenCLIP backbone, data split, loss, optimizer family,
 and evaluation code. Only the adaptation strategy changes. State is saved atomically
 throughout each epoch; completed experiments are skipped on subsequent invocations.
+
+Splits (v2):
+  train  = data/train.csv minus a held-out DEV set of `selection_images` images
+  dev    = images carved from train (fixed `split_seed`); used ONLY to pick the epoch
+  test   = data/val.csv (1,000 images / 5,000 captions); never used for any decision
+data/test.csv is the unlabeled competition query set and is not used for metrics.
+Set selection_images=0 to reproduce the v1 protocol (epoch picked on val.csv).
 """
 from __future__ import annotations
 
@@ -25,6 +32,8 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 import open_clip
 
+from retrieval_metrics import metrics_from_ranks, per_query_frame, ranks_from_similarity
+
 
 @dataclass
 class SuiteConfig:
@@ -37,6 +46,9 @@ class SuiteConfig:
     eval_batch_size: int = 256
     num_workers: int = 4
     seed: int = 42
+    selection_images: int = 500   # dev images carved from train for epoch selection (0 = v1 protocol)
+    split_seed: int = 0           # fixed across training seeds so only training randomness varies
+    patience: int = 0             # early-stop after N epochs without DEV improvement (0 = off)
     checkpoint_every_batches: int = 100
     fast_dev_run: bool = False
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
@@ -151,6 +163,18 @@ class RetrievalSuite:
         self.train_dir = self.data / "train_images/train_images"
         self.val_dir = self.data / "val_images/val_images"
         self._validate_data()
+        if cfg.selection_images > 0:
+            ids = np.array(sorted(self.train.image_id.unique()))
+            if cfg.selection_images >= len(ids):
+                raise ValueError("selection_images must be smaller than the number of training images")
+            dev_ids = set(np.random.default_rng(cfg.split_seed).choice(ids, cfg.selection_images, replace=False).tolist())
+            self.dev = self.train[self.train.image_id.isin(dev_ids)].reset_index(drop=True)
+            self.train = self.train[~self.train.image_id.isin(dev_ids)].reset_index(drop=True)
+            self.dev_dir = self.train_dir
+            assert not set(self.dev.image_id) & set(self.train.image_id)
+        else:  # v1 protocol: selection on the reported split (optimistically biased)
+            self.dev, self.dev_dir = self.val, self.val_dir
+        self.selection_split = "dev (carved from train)" if cfg.selection_images > 0 else "val.csv (v1, biased)"
 
     def _validate_data(self):
         assert {"image_id", "caption_id"} <= set(self.train)
@@ -170,7 +194,7 @@ class RetrievalSuite:
         elif strategy == "lora":
             count = inject_lora(model, spec.get("lora_rank", 8), spec.get("lora_alpha", 16))
             model.logit_scale.requires_grad = True
-            if count == 0: raise RuntimeError("No attention projections received LoRA adapters")
+            if count == 0: raise RuntimeError("No transformer MLP projections received LoRA adapters")
         elif strategy == "full":
             for p in model.parameters(): p.requires_grad = True
         return model.to(self.cfg.device), preprocess, tokenizer
@@ -198,25 +222,19 @@ class RetrievalSuite:
             output.append(F.normalize(model.encode_text(tok), dim=-1).cpu())
         return torch.cat(output)
 
-    @staticmethod
-    def _recall(pred, truth, k):
-        return float(np.mean([bool(set(p[:k]) & set(t if isinstance(t, list) else [t])) for p, t in zip(pred, truth)]))
-
     @torch.no_grad()
-    def evaluate(self, model, preprocess, tokenizer):
-        image_ids = sorted(self.val.image_id.unique().astype(int)); caption_ids = sorted(self.val.caption_id.unique().astype(int))
-        ie = self._encode_images(model, preprocess, image_ids, self.val_dir)
-        te = self._encode_text(model, tokenizer, caption_ids); sim = ie @ te.T
-        ip = [[caption_ids[j] for j in row] for row in sim.topk(10, dim=1).indices.tolist()]
-        tp = [[image_ids[j] for j in row] for row in sim.T.topk(10, dim=1).indices.tolist()]
-        igt = self.val.groupby("image_id").caption_id.apply(list).to_dict(); tgt = self.val.set_index("caption_id").image_id.to_dict()
-        m = {}
-        for k in (1, 5, 10): m[f"i2t_R@{k}"] = self._recall(ip, [igt[i] for i in image_ids], k)
-        for k in (1, 5, 10): m[f"t2i_R@{k}"] = self._recall(tp, [int(tgt[i]) for i in caption_ids], k)
-        m["i2t_score"] = np.mean([m[f"i2t_R@{k}"] for k in (1,5,10)])
-        m["t2i_score"] = np.mean([m[f"t2i_R@{k}"] for k in (1,5,10)])
-        m["mean_score"] = (m["i2t_score"] + m["t2i_score"]) / 2
-        return {k: float(v) for k, v in m.items()}
+    def evaluate(self, model, preprocess, tokenizer, split: str = "dev", per_query: bool = False):
+        """Exact-rank retrieval metrics on `dev` (selection) or `test` (= data/val.csv)."""
+        frame, directory = (self.dev, self.dev_dir) if split == "dev" else (self.val, self.val_dir)
+        image_ids = sorted(frame.image_id.unique().astype(int)); caption_ids = sorted(frame.caption_id.unique().astype(int))
+        ie = self._encode_images(model, preprocess, image_ids, directory)
+        te = self._encode_text(model, tokenizer, caption_ids); sim = (ie @ te.T).float().numpy()
+        igt = frame.groupby("image_id").caption_id.apply(list).to_dict(); tgt = frame.set_index("caption_id").image_id.to_dict()
+        i2t, t2i = ranks_from_similarity(sim, image_ids, caption_ids, igt, tgt)
+        metrics = metrics_from_ranks(i2t, t2i)
+        if per_query:
+            return metrics, per_query_frame(image_ids, caption_ids, i2t, t2i)
+        return metrics
 
     def _state(self, model, optimizer, scaler, epoch, next_batch, history, best):
         return {"model": model.state_dict(), "optimizer": optimizer.state_dict() if optimizer else None,
@@ -253,7 +271,7 @@ class RetrievalSuite:
         pairs = self.train.head(512) if self.cfg.fast_dev_run else self.train
         dataset = PairDataset(pairs, self.train_dir, self.image_names, self.captions, preprocess)
         if epochs == 0:
-            metrics=self.evaluate(model,preprocess,tokenizer); history=[{"epoch":0,"train_loss":np.nan,**metrics}]
+            metrics=self.evaluate(model,preprocess,tokenizer,"dev"); history=[{"epoch":0,"train_loss":np.nan,**metrics}]
         else:
             for epoch in range(start_epoch, epochs+1):
                 if spec["strategy"] == "gradual" and epoch == unfreeze_epoch and not full_gradual:
@@ -271,14 +289,30 @@ class RetrievalSuite:
                     scaler.scale(loss).backward(); scaler.step(optimizer); scaler.update(); losses.append(loss.item())
                     if (bi+1)%self.cfg.checkpoint_every_batches==0:
                         atomic_torch_save(self._state(model,optimizer,scaler,epoch,bi+1,history,best),last)
-                metrics=self.evaluate(model,preprocess,tokenizer); record={"epoch":epoch,"train_loss":float(np.mean(losses)),**metrics}; history.append(record)
+                metrics=self.evaluate(model,preprocess,tokenizer,"dev"); record={"epoch":epoch,"train_loss":float(np.mean(losses)),**metrics}; history.append(record)
                 pd.DataFrame(history).to_csv(folder/"history.csv",index=False)
                 if metrics["mean_score"]>best:
                     best=metrics["mean_score"]; atomic_torch_save({"model":model.state_dict(),"metrics":metrics},folder/"best.pt")
                 atomic_torch_save(self._state(model,optimizer,scaler,epoch+1,0,history,best),last); start_batch=0
+                # Early stopping on the DEV split only (never the reported test split). For gradual
+                # unfreezing, patience starts counting once the backbone has been unfrozen.
+                best_epoch=max(history,key=lambda x:x["mean_score"])["epoch"]
+                past_unfreeze = spec["strategy"] != "gradual" or epoch >= unfreeze_epoch
+                if self.cfg.patience and past_unfreeze and epoch - max(best_epoch, unfreeze_epoch if spec["strategy"]=="gradual" else 0) >= self.cfg.patience:
+                    print(f"[early stop] {name}: no dev improvement for {self.cfg.patience} epochs (best epoch {best_epoch})")
+                    break
         best_record=max(history,key=lambda x:x["mean_score"])
+        trainable_parameters=sum(p.numel() for p in model.parameters() if p.requires_grad)
+        # Final, one-time evaluation of the dev-selected checkpoint on the held-out test split.
+        if epochs > 0 and (folder/"best.pt").exists():
+            model.load_state_dict(torch.load(folder/"best.pt", map_location=self.cfg.device, weights_only=False)["model"])
+        test_metrics, test_queries = self.evaluate(model, preprocess, tokenizer, "test", per_query=True)
+        test_queries.to_csv(folder/"test_per_query.csv", index=False)
         result={"experiment":name,"strategy":spec["strategy"],"status":"completed","best_epoch":best_record["epoch"],
-                "trainable_parameters":sum(p.numel() for p in model.parameters() if p.requires_grad),**best_record}
+                "seed":self.cfg.seed,"epochs_run":len(history),"patience":self.cfg.patience,"selection_split":self.selection_split,"model":f"{self.cfg.model_name}/{self.cfg.pretrained}",
+                "trainable_parameters":trainable_parameters,
+                **{f"dev_{k}":v for k,v in best_record.items() if k not in ("epoch",)},
+                **{f"test_{k}":v for k,v in test_metrics.items()}}
         atomic_json_save(result,done); return result
 
     def run_all(self, experiments=None):
@@ -290,5 +324,5 @@ class RetrievalSuite:
                 raise
             finally:
                 if torch.cuda.is_available(): torch.cuda.empty_cache()
-        table=pd.DataFrame(results).sort_values("mean_score",ascending=False); table.to_csv(self.runs/"fresh_comparison.csv",index=False)
+        table=pd.DataFrame(results).sort_values("test_mean_score",ascending=False); table.to_csv(self.runs/"fresh_comparison.csv",index=False)
         return table
